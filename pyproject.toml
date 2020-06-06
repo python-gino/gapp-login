@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "gapp-login"
+version = "0.1.0"
+description = "GINO App extension to support multiple login providers."
+authors = ["Fantix King <fantix.king@gmail.com>"]
+license = "BSD-3-Clause"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+authlib-gino = {version = "^0.1.0", extras = ["app"]}
+httpx = "^0.13.3"
+python-multipart = "^0.0.5"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.plugins."gino.app.extensions"]
+"login.sms" = "gapp_login.sms:init_app"
+
+[tool.poetry.plugins."gino.app.migrations"]
+"login.sms" = "gapp_login.sms:migrations"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
