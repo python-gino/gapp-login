@@ -14,7 +14,7 @@ python-multipart = "^0.0.5"
 [tool.poetry.dev-dependencies]
 
 [tool.poetry.plugins."gino.app.extensions"]
-"login.sms" = "gapp_login.sms:init_app"
+"login.sms" = "gapp_login.sms.endpoints:init_app"
 
 [tool.poetry.plugins."gino.app.migrations"]
 "login.sms" = "gapp_login.sms:migrations"
