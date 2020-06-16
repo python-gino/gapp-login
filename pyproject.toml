@@ -15,6 +15,7 @@ python-multipart = "^0.0.5"
 
 [tool.poetry.plugins."gino.app.extensions"]
 "login.sms" = "gapp_login.sms.endpoints:init_app"
+"login.wechat" = "gapp_login.wechat.endpoints:init_app"
 
 [tool.poetry.plugins."gino.app.migrations"]
 "login.sms" = "gapp_login.sms:migrations"
