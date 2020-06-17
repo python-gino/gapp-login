@@ -1,14 +1,14 @@
 """wechat login initial
 
-Revision ID: 95f55997d436
+Revision ID: 450921ce3e56
 Revises:
-Create Date: 2020-06-17 14:07:52.112350
+Create Date: 2020-06-17 15:18:58.686238
 
 """
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "95f55997d436"
+revision = "450921ce3e56"
 down_revision = None
 branch_labels = ("wechat",)
 depends_on = None
@@ -23,4 +23,4 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_index("identities_wechat_unionid_idx", table_name="identities")
+    op.execute("DROP INDEX IF EXISTS identities_wechat_unionid_idx")

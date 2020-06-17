@@ -42,6 +42,7 @@ async def login_wechat(
                 raise HTTPException(status.HTTP_403_FORBIDDEN, e.error)
 
     openid = data["openid"]
+    unionid = data.get("unionid")
     async with db.transaction() as tx:
         result = await (
             WeChatIdentity.outerjoin(User)
@@ -53,13 +54,20 @@ async def login_wechat(
             .first()
         )
         identity_data = dict(
-            wechat_unionid=data.get("unionid"),
+            wechat_unionid=unionid,
             wechat_session_key=data.get("session_key"),
             wechat_refresh_token=data.get("refresh_token"),
             wechat_user_info=user_info,
         )
         if result is None:
-            user = await User.create(name=user_info.get("nickname") or openid)
+            if unionid:
+                user = await (
+                    User.query.select_from(WeChatIdentity.outerjoin(User))
+                    .where(WeChatIdentity.wechat_unionid == unionid)
+                    .gino.first()
+                )
+                if not user:
+                    user = await User.create(name=user_info.get("nickname") or openid)
             await WeChatIdentity.create(
                 sub=openid, idp=idp, user_id=user.id, **identity_data,
             )
