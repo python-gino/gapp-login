@@ -45,11 +45,11 @@ description = "OpenID Connect provider implemented with Authlib and GINO."
 name = "authlib-gino"
 optional = false
 python-versions = ">=3.8,<4.0"
-version = "0.1.0"
+version = "0.2.1"
 
 [package.dependencies]
 authlib = ">=0.14.3,<0.15.0"
-gino = "*"
+gino = ">=1.0.1,<2.0.0"
 
 [package.dependencies.alembic]
 optional = true
@@ -63,8 +63,12 @@ version = ">=0.55.1,<0.56.0"
 optional = true
 version = ">=2.8.5,<3.0.0"
 
+[package.dependencies.python-multipart]
+optional = true
+version = ">=0.0.5,<0.0.6"
+
 [package.extras]
-app = ["fastapi (>=0.55.1,<0.56.0)", "alembic (>=1.4.2,<2.0.0)", "psycopg2-binary (>=2.8.5,<3.0.0)"]
+app = ["fastapi (>=0.55.1,<0.56.0)", "alembic (>=1.4.2,<2.0.0)", "psycopg2-binary (>=2.8.5,<3.0.0)", "python-multipart (>=0.0.5,<0.0.6)"]
 starlette = ["starlette (>=0.13.2,<0.14.0)"]
 
 [[package]]
@@ -73,7 +77,7 @@ description = "Python package for providing Mozilla's CA Bundle."
 name = "certifi"
 optional = false
 python-versions = "*"
-version = "2020.4.5.1"
+version = "2020.4.5.2"
 
 [[package]]
 category = "main"
@@ -137,10 +141,10 @@ description = "GINO Is Not ORM - a Python asyncio ORM on SQLAlchemy core."
 name = "gino"
 optional = false
 python-versions = ">=3.5,<4.0"
-version = "1.0.0"
+version = "1.0.1"
 
 [package.dependencies]
-SQLAlchemy = ">=1.2,<2.0"
+SQLAlchemy = ">=1.2.16,<1.4"
 asyncpg = ">=0.18,<1.0"
 
 [package.extras]
@@ -184,7 +188,7 @@ description = "Chromium HSTS Preload list as a Python package and updated daily"
 name = "hstspreload"
 optional = false
 python-versions = ">=3.6"
-version = "2020.6.5"
+version = "2020.6.16"
 
 [[package]]
 category = "main"
@@ -373,7 +377,7 @@ version = "0.13.2"
 full = ["aiofiles", "graphene", "itsdangerous", "jinja2", "python-multipart", "pyyaml", "requests", "ujson"]
 
 [metadata]
-content-hash = "3d348a5ae4d46e0cd331dde0db26c47e16b370469e52dea50cf9567427a43071"
+content-hash = "9b264953f1a18758980788e1ceefb1f69b0cf89a4fab822237a0e56ed083b294"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -408,12 +412,12 @@ authlib = [
     {file = "Authlib-0.14.3.tar.gz", hash = "sha256:cc52908e9e996f3de2ac2f61bf1ee6c6f1c5ce8e67c89ff2ca473008fffc92f6"},
 ]
 authlib-gino = [
-    {file = "authlib-gino-0.1.0.tar.gz", hash = "sha256:aac73da20430cbab6ab5f3a8a9e8c3f6483b6623ffc3130324e2f2d2a10acb92"},
-    {file = "authlib_gino-0.1.0-py3-none-any.whl", hash = "sha256:2210f48628bf0c293d83a3f2d55e96ab6a7bd9d08f6acd35a822f1f4ede61b9a"},
+    {file = "authlib-gino-0.2.1.tar.gz", hash = "sha256:d6d584b7c410aaeea8ef765544a3478559d3877e374f3cfe5cb72eaa1a9c65dc"},
+    {file = "authlib_gino-0.2.1-py3-none-any.whl", hash = "sha256:07475abdc46e7fc9b84f206f9cbae693bd900472f049423cf9a5f0b64743f37b"},
 ]
 certifi = [
-    {file = "certifi-2020.4.5.1-py2.py3-none-any.whl", hash = "sha256:1d987a998c75633c40847cc966fcf5904906c920a7f17ef374f5aa4282abd304"},
-    {file = "certifi-2020.4.5.1.tar.gz", hash = "sha256:51fcb31174be6e6664c5f69e3e1691a2d72a1a12e90f872cbdb1567eb47b6519"},
+    {file = "certifi-2020.4.5.2-py2.py3-none-any.whl", hash = "sha256:9cd41137dc19af6a5e03b630eefe7d1f458d964d406342dd3edf625839b944cc"},
+    {file = "certifi-2020.4.5.2.tar.gz", hash = "sha256:5ad7e9a056d25ffa5082862e36f119f7f7cec6457fa07ee2f8c339814b80c9b1"},
 ]
 cffi = [
     {file = "cffi-1.14.0-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:1cae98a7054b5c9391eb3249b86e0e99ab1e02bb0cc0575da191aedadbdf4384"},
@@ -475,8 +479,8 @@ fastapi = [
     {file = "fastapi-0.55.1.tar.gz", hash = "sha256:912bc1a1b187146fd74dd45e17ea10aede3d962c921142c412458e911c50dc4c"},
 ]
 gino = [
-    {file = "gino-1.0.0-py3-none-any.whl", hash = "sha256:5750575d25b458ac8c484f324310042485ecd8039ae67fc82bc34e06182c2737"},
-    {file = "gino-1.0.0.tar.gz", hash = "sha256:0924f16e02f33f046ad3aa9bc02a7ac7cd72f89261f4447ab54fd789eb3b65fc"},
+    {file = "gino-1.0.1-py3-none-any.whl", hash = "sha256:56df57cfdefbaf897a7c4897c265a0e91a8cca80716fb64f7d3cf6d501fdfb3d"},
+    {file = "gino-1.0.1.tar.gz", hash = "sha256:fe4189e82fe9d20c4a5f03fc775fb91c168061c5176b4c95623caeef22316150"},
 ]
 h11 = [
     {file = "h11-0.9.0-py2.py3-none-any.whl", hash = "sha256:4bc6d6a1238b7615b266ada57e0618568066f57dd6fa967d1290ec9309b2f2f1"},
@@ -491,8 +495,8 @@ hpack = [
     {file = "hpack-3.0.0.tar.gz", hash = "sha256:8eec9c1f4bfae3408a3f30500261f7e6a65912dc138526ea054f9ad98892e9d2"},
 ]
 hstspreload = [
-    {file = "hstspreload-2020.6.5-py3-none-any.whl", hash = "sha256:9850f199a4678bbc6a392255948d2435b706bc8a7e40df0f84ac2f7348cf4195"},
-    {file = "hstspreload-2020.6.5.tar.gz", hash = "sha256:2858151b4f77322c6a61312abccead20217b1169ae0855753c0da45da2049329"},
+    {file = "hstspreload-2020.6.16-py3-none-any.whl", hash = "sha256:c3a57dbc6abc898f55c791f37bb3ead338ca96b4d1c446cf58eea4e0c10bef4a"},
+    {file = "hstspreload-2020.6.16.tar.gz", hash = "sha256:06a634aa0be9a51560be8dccfeceddeba6a2f0a9273433d778c93cdaf93c86d0"},
 ]
 httpcore = [
     {file = "httpcore-0.9.1-py3-none-any.whl", hash = "sha256:9850fe97a166a794d7e920590d5ec49a05488884c9fc8b5dba8561effab0c2a0"},
@@ -542,6 +546,11 @@ markupsafe = [
     {file = "MarkupSafe-1.1.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:ba59edeaa2fc6114428f1637ffff42da1e311e29382d81b339c1817d37ec93c6"},
     {file = "MarkupSafe-1.1.1-cp37-cp37m-win32.whl", hash = "sha256:b00c1de48212e4cc9603895652c5c410df699856a2853135b3967591e4beebc2"},
     {file = "MarkupSafe-1.1.1-cp37-cp37m-win_amd64.whl", hash = "sha256:9bf40443012702a1d2070043cb6291650a0841ece432556f784f004937f0f32c"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:6788b695d50a51edb699cb55e35487e430fa21f1ed838122d722e0ff0ac5ba15"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-manylinux1_i686.whl", hash = "sha256:cdb132fc825c38e1aeec2c8aa9338310d29d337bebbd7baa06889d09a60a1fa2"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:13d3144e1e340870b25e7b10b98d779608c02016d5184cfb9927a9f10c689f42"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-win32.whl", hash = "sha256:596510de112c685489095da617b5bcbbac7dd6384aeebeda4df6025d0256a81b"},
+    {file = "MarkupSafe-1.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:e8313f01ba26fbbe36c7be1966a7b7424942f670f38e666995b88d012765b9be"},
     {file = "MarkupSafe-1.1.1.tar.gz", hash = "sha256:29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b"},
 ]
 psycopg2-binary = [

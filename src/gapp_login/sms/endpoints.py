@@ -2,9 +2,9 @@ import logging
 import time
 
 from authlib.common.security import generate_token
-from authlib_gino.fastapi_session.api import auth
+from authlib_gino.fastapi_session.api import auth, login_context
 from authlib_gino.fastapi_session.models import User
-from fastapi import APIRouter, HTTPException, Form, FastAPI
+from fastapi import APIRouter, HTTPException, Form, FastAPI, Depends
 from starlette import status
 from starlette.requests import Request
 
@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 @router.post("/login/sms")
-async def request_sms(prefix: str, number: str):
+async def request_sms(prefix: str, number: str, ctx=Depends(login_context)):
     if prefix not in config.SMS_SUPPORTED_PREFIX:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"{prefix} not supported.")
 
@@ -29,7 +29,9 @@ async def request_sms(prefix: str, number: str):
 
 
 @router.put("/login/sms/{sms_id}")
-async def submit_sms(sms_id: str, request: Request, code: str = Form(...)):
+async def submit_sms(
+    sms_id: str, request: Request, code: str = Form(...), ctx=Depends(login_context)
+):
     async with db.transaction() as tx:
         now = int(time.time())
         result = await (
@@ -63,7 +65,7 @@ async def submit_sms(sms_id: str, request: Request, code: str = Form(...)):
                 sms_prefix=sms.prefix,
                 sms_number=sms.number,
             )
-        rv = await auth.create_authorization_response(request, user)
+        rv = await auth.create_authorization_response(request, user, ctx)
         if rv.status_code >= 400:
             tx.raise_rollback()
     return rv
