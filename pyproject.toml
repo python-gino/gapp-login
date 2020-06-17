@@ -19,6 +19,7 @@ python-multipart = "^0.0.5"
 
 [tool.poetry.plugins."gino.app.migrations"]
 "login.sms" = "gapp_login.sms:migrations"
+"login.wechat" = "gapp_login.wechat:migrations"
 
 [build-system]
 requires = ["poetry>=0.12"]

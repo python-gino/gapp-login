@@ -1,89 +1,74 @@
-import enum
 import logging
+from urllib import parse
 
-from authlib_gino.fastapi_session.api import auth
+from authlib_gino.fastapi_session.api import auth, login_context
 from authlib_gino.fastapi_session.models import User
-from fastapi import APIRouter, HTTPException, Form, FastAPI
+from fastapi import APIRouter, HTTPException, Form, FastAPI, Depends
 from starlette import status
 from starlette.requests import Request
 
+from . import config
 from .models import db, WeChatIdentity
-from .utils import (
-    MiniProgramUtil,
-    NativeAppUtil,
-    OpenWebUtil,
-    WXWebUtil,
-    WeChatAuthError,
-)
+from .utils import WeChatAuthError
 
 log = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class WeChatLoginType(enum.Enum):
-    MINI_PROGRAM = "wxa"  # Mini Program
-    NATIVE_APP = "app"  # Mobile Native App
-    OPEN_WEB = "web"  # Website
-    WX_WEB = "mp"  # WeChat Mini Web
-
-
-WeChatLoginType.MINI_PROGRAM.idp_name = "WECHAT_WXA"
-WeChatLoginType.NATIVE_APP.idp_name = "WECHAT_APP"
-WeChatLoginType.OPEN_WEB.idp_name = "WECHAT_WEB"
-WeChatLoginType.WX_WEB.idp_name = "WECHAT_MP"
-
-WeChatLoginType.MINI_PROGRAM.openid_name = "wxa_openid"
-WeChatLoginType.NATIVE_APP.openid_name = "app_openid"
-WeChatLoginType.OPEN_WEB.openid_name = "web_openid"
-WeChatLoginType.WX_WEB.openid_name = "mp_openid"
-
-WeChatLoginType.MINI_PROGRAM.wechat_util = MiniProgramUtil
-WeChatLoginType.NATIVE_APP.wechat_util = NativeAppUtil
-WeChatLoginType.OPEN_WEB.wechat_util = OpenWebUtil
-WeChatLoginType.WX_WEB.wechat_util = WXWebUtil
-
-
-@router.post("/login/wechat")
+@router.put("/login/wechat")
 async def login_wechat(
-    request: Request, login_type: WeChatLoginType, code: str = Form(...)
+    request: Request, code: str = Form(...), ctx=Depends(login_context)
 ):
-    wechat_util = login_type.wechat_util()
-    try:
-        data = await wechat_util.auth(code=code)
-    except WeChatAuthError as e:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, e.error)
+    idp = ctx["idp"]
+    idp_params = dict(parse.parse_qsl(parse.unquote(ctx["idp_params"])))
+    appid = idp_params.get("appid")
+    if not appid or appid not in config.WECHAT_CLIENTS:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Wrong wechat AppID")
+
+    async with config.WECHAT_CLIENTS[appid] as client:
+        try:
+            data = await client.request_token(code=code)
+        except WeChatAuthError as e:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, e.error)
+
+        scope = idp_params.get("scope")
+        user_info = {}
+        if scope in {"snsapi_userinfo", "snsapi_login"}:
+            try:
+                user_info = await client.get_user_info(
+                    access_token=data["access_token"], openid=data["openid"]
+                )
+            except WeChatAuthError as e:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, e.error)
 
     openid = data["openid"]
-
     async with db.transaction() as tx:
         result = await (
             WeChatIdentity.outerjoin(User)
             .select()
+            .with_for_update(of=WeChatIdentity)
             .where(WeChatIdentity.sub == openid)
-            .where(WeChatIdentity.idp == login_type.idp_name)
+            .where(WeChatIdentity.idp == idp)
             .gino.load((WeChatIdentity, User))
             .first()
         )
+        identity_data = dict(
+            wechat_unionid=data.get("unionid"),
+            wechat_session_key=data.get("session_key"),
+            wechat_refresh_token=data.get("refresh_token"),
+            wechat_user_info=user_info,
+        )
         if result is None:
-            user = await User.create(name=data.get("nickname"))
-            await WeChatIdentity.create()
+            user = await User.create(name=user_info.get("nickname") or openid)
+            await WeChatIdentity.create(
+                sub=openid, idp=idp, user_id=user.id, **identity_data,
+            )
         else:
             identity, user = result
+            identity_data["wechat_user_info"].update(identity.wechat_user_info or {})
+            await identity.update(**identity_data).apply()
 
-        identity_data = {
-            "sub": openid,
-            "idp": login_type.idp_name,
-            "user_id": user.id,
-            "unionid": data.get("unionid"),
-            login_type.openid_name: openid,
-            "session_key": data.get("session_key"),
-            "refresh_token": data.get("refresh_token"),
-            "nickname": data.get("nickname"),
-            "headimgurl": data.get("headimgurl"),
-            "sex": data.get("sex"),
-        }
-        await identity.update(**identity_data).apply()
-        rv = await auth.create_authorization_response(request, user)
+        rv = await auth.create_authorization_response(request, user, ctx)
         if rv.status_code >= 400:
             tx.raise_rollback()
     return rv

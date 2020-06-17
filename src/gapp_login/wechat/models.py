@@ -6,13 +6,15 @@ db = load_entry_point("db", Gino)
 
 
 class WeChatIdentity(Identity):
-    wxa_openid = db.StringProperty()
-    app_openid = db.StringProperty()
-    web_openid = db.StringProperty()
-    mp_openid = db.StringProperty()
-    unionid = db.StringProperty()
-    session_key = db.StringProperty()
-    refresh_token = db.StringProperty()
-    nickname = db.StringProperty()
-    headimgurl = db.StringProperty()
-    sex = db.StringProperty()
+    wechat_unionid = db.StringProperty()
+    wechat_session_key = db.StringProperty()
+    wechat_refresh_token = db.StringProperty()
+    wechat_user_info = db.ObjectProperty()
+
+    @db.declared_attr
+    def wechat_unionid_idx(cls):
+        return db.Index(
+            "identities_wechat_unionid_idx",
+            cls.wechat_unionid,
+            postgresql_where=(~cls.wechat_unionid),
+        )
