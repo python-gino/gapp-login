@@ -18,12 +18,14 @@ def get_wechat_clients(value: str):
     ]
     """
     clients = json.loads(value)
-    client_mapping = {}
-    for app_id, client_conf in {client["AppID"]: client for client in clients}.items():
-        module, cls_name = client_conf["Type"].rsplit(".", 1)
-        client_cls = getattr(importlib.import_module(module), cls_name)
-        client_mapping[app_id] = client_cls(app_id, client_conf["AppSecret"])
-    return client_mapping
+    return {
+        client["AppID"]: (
+            lambda module, cls_name: getattr(importlib.import_module(module), cls_name)(
+                client["AppID"], client["AppSecret"]
+            )
+        )(*client["Type"].rsplit(".", 1))
+        for client in clients
+    }
 
 
 WECHAT_CLIENTS = config("WECHAT_CLIENTS", cast=get_wechat_clients, default="")

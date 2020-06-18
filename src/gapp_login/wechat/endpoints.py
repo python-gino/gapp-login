@@ -65,7 +65,7 @@ async def login_wechat(
                 user = await (
                     User.query.select_from(WeChatIdentity.outerjoin(User))
                     .where(WeChatIdentity.wechat_unionid == unionid)
-                    .where(db.func.starts_with(WeChatIdentity.idp, 'WECHAT'))
+                    .where(db.func.starts_with(WeChatIdentity.idp, "WECHAT"))
                     .gino.first()
                 )
             if not user:
