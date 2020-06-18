@@ -16,5 +16,5 @@ class WeChatIdentity(Identity):
         return db.Index(
             "identities_wechat_unionid_idx",
             cls.wechat_unionid,
-            postgresql_where=(~cls.wechat_unionid),
+            postgresql_where=(db.func.starts_with(cls.idp, "WECHAT")),
         )

@@ -39,12 +39,6 @@ class WeChatBaseClient:
         self.secret = secret
         self.client = httpx.AsyncClient()
 
-    async def __aenter__(self) -> "WeChatBaseClient":
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb) -> None:
-        await self.client.aclose()
-
 
 class OAuth2WeChatClient(WeChatBaseClient):
     async def request_token(self, code: str) -> dict:

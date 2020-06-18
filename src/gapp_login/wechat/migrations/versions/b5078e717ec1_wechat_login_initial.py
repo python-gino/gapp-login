@@ -1,24 +1,26 @@
 """wechat login initial
 
-Revision ID: 450921ce3e56
+Revision ID: b5078e717ec1
 Revises:
-Create Date: 2020-06-17 15:18:58.686238
+Create Date: 2020-06-18 11:13:08.088391
 
 """
 from alembic import op
+import sqlalchemy as sa
+
 
 # revision identifiers, used by Alembic.
-revision = "450921ce3e56"
+revision = "b5078e717ec1"
 down_revision = None
 branch_labels = ("wechat",)
-depends_on = None
+depends_on = "a36c9db3f264"
 
 
 def upgrade():
     op.execute(
         "CREATE INDEX identities_wechat_unionid_idx "
         "    ON identities (CAST(profile ->> 'wechat_unionid' AS CHARACTER VARYING)) "
-        " WHERE CAST(profile ->> 'wechat_unionid' AS CHARACTER VARYING) IS NOT NULL"
+        " WHERE starts_with(idp, 'WECHAT')"
     )
 
 
