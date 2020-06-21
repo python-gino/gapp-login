@@ -66,8 +66,9 @@ async def login_wechat(
             wechat_unionid=unionid,
             wechat_session_key=data.get("session_key"),
             wechat_refresh_token=data.get("refresh_token"),
-            wechat_user_info=user_info,
         )
+        if user_info:
+            identity_data["wechat_user_info"] = user_info
         if result is None:
             user = None
             if unionid:
@@ -99,15 +100,9 @@ async def login_wechat(
     return rv
 
 
-@router.post("/users/update/wxa")
-async def update_wechat_account_info(
-    user: User = Security(require_user),
-    encrypted_data: str = Form(...),
-    iv: str = Form(...),
-    app_id: str = Form(...),
-):
-    encrypted_data = base64.b64decode(encrypted_data)
-    iv = base64.b64decode(iv)
+async def wechat_identity(
+    app_id: str, user: User = Security(require_user)
+) -> WeChatIdentity:
     identity = await (
         WeChatIdentity.query.select_from(User.outerjoin(WeChatIdentity))
         .where(User.id == user.id)
@@ -116,10 +111,21 @@ async def update_wechat_account_info(
         .gino.first()
     )
     if not identity:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User is not found")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "WeChat account not found")
+    return identity
 
+
+@router.post("/users/update/wxa")
+async def update_wechat_account_info(
+    encrypted_data: str = Form(...),
+    iv: str = Form(...),
+    identity: WeChatIdentity = Depends(wechat_identity),
+):
     wechat_session_key = identity.profile.get("wechat_session_key")
+    wechat_app_id = identity.profile.get("wechat_app_id")
     session_key = base64.b64decode(wechat_session_key)
+    encrypted_data = base64.b64decode(encrypted_data)
+    iv = base64.b64decode(iv)
     decryptor = Cipher(
         algorithms.AES(session_key), modes.CBC(iv), backend=default_backend(),
     ).decryptor()
@@ -128,11 +134,16 @@ async def update_wechat_account_info(
     data = unpadder.update(data) + unpadder.finalize()
     data = json.loads(data)
     wm = data.pop("watermark")
-    if wm["appid"] != app_id:
+    if wm["appid"] != wechat_app_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bad wechat AppID")
 
     await identity.update(wechat_user_info=data).apply()
     return dict(data=data)
+
+
+@router.get("/users/wechat")
+async def get_wechat_account_info(identity: WeChatIdentity = Depends(wechat_identity)):
+    return dict(data=identity.profile.get("wechat_user_info"))
 
 
 def init_app(app: FastAPI):
