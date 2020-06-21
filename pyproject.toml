@@ -10,6 +10,7 @@ python = "^3.8"
 authlib-gino = {version = "^0.2.0", extras = ["app"]}
 httpx = "^0.13.3"
 python-multipart = "^0.0.5"
+cryptography = "^2.9.2"
 
 [tool.poetry.dev-dependencies]
 

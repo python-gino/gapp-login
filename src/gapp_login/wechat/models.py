@@ -10,11 +10,20 @@ class WeChatIdentity(Identity):
     wechat_session_key = db.StringProperty()
     wechat_refresh_token = db.StringProperty()
     wechat_user_info = db.ObjectProperty()
+    wechat_app_id = db.StringProperty()
 
     @db.declared_attr
     def wechat_unionid_idx(cls):
         return db.Index(
             "identities_wechat_unionid_idx",
             cls.wechat_unionid,
+            postgresql_where=(db.func.starts_with(cls.idp, "WECHAT")),
+        )
+
+    @db.declared_attr
+    def wechat_app_id_idx(cls):
+        return db.Index(
+            "identities_wechat_app_id_idx",
+            cls.wechat_app_id,
             postgresql_where=(db.func.starts_with(cls.idp, "WECHAT")),
         )

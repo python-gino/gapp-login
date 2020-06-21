@@ -1,9 +1,18 @@
+import base64
+import json
 import logging
 from urllib import parse
 
-from authlib_gino.fastapi_session.api import auth, login_context
+from authlib_gino.fastapi_session.api import (
+    auth,
+    login_context,
+    require_user,
+)
 from authlib_gino.fastapi_session.models import User
-from fastapi import APIRouter, HTTPException, Form, FastAPI, Depends
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.padding import PKCS7
+from fastapi import APIRouter, HTTPException, Form, FastAPI, Depends, Security
 from starlette import status
 from starlette.requests import Request
 
@@ -71,7 +80,11 @@ async def login_wechat(
             if not user:
                 user = await User.create(name=user_info.get("nickname") or openid)
             await WeChatIdentity.create(
-                sub=openid, idp=idp, user_id=user.id, **identity_data,
+                sub=openid,
+                idp=idp,
+                user_id=user.id,
+                wechat_app_id=appid,
+                **identity_data,
             )
         else:
             identity, user = result
@@ -84,6 +97,42 @@ async def login_wechat(
         if rv_location.startswith("wxa://"):
             return dict(parse.parse_qs(rv_location.split("?", 1)[1]))
     return rv
+
+
+@router.post("/users/update/wxa")
+async def update_wechat_account_info(
+    user: User = Security(require_user),
+    encrypted_data: str = Form(...),
+    iv: str = Form(...),
+    app_id: str = Form(...),
+):
+    encrypted_data = base64.b64decode(encrypted_data)
+    iv = base64.b64decode(iv)
+    identity = await (
+        WeChatIdentity.query.select_from(User.outerjoin(WeChatIdentity))
+        .where(User.id == user.id)
+        .where(WeChatIdentity.wechat_app_id == app_id)
+        .where(db.func.starts_with(WeChatIdentity.idp, "WECHAT"))
+        .gino.first()
+    )
+    if not identity:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User is not found")
+
+    wechat_session_key = identity.profile.get("wechat_session_key")
+    session_key = base64.b64decode(wechat_session_key)
+    decryptor = Cipher(
+        algorithms.AES(session_key), modes.CBC(iv), backend=default_backend(),
+    ).decryptor()
+    data = decryptor.update(encrypted_data) + decryptor.finalize()
+    unpadder = PKCS7(algorithms.AES.block_size).unpadder()
+    data = unpadder.update(data) + unpadder.finalize()
+    data = json.loads(data)
+    wm = data.pop("watermark")
+    if wm["appid"] != app_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bad wechat AppID")
+
+    await identity.update(wechat_user_info=data).apply()
+    return dict(data=data)
 
 
 def init_app(app: FastAPI):

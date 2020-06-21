@@ -377,7 +377,7 @@ version = "0.13.2"
 full = ["aiofiles", "graphene", "itsdangerous", "jinja2", "python-multipart", "pyyaml", "requests", "ujson"]
 
 [metadata]
-content-hash = "9b264953f1a18758980788e1ceefb1f69b0cf89a4fab822237a0e56ed083b294"
+content-hash = "4a4863d98ebfcce00266f7cd1f280a9ae5568f6e0f97f3e205334e41fff7bd9d"
 python-versions = "^3.8"
 
 [metadata.files]
