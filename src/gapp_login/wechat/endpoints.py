@@ -83,7 +83,7 @@ async def login_wechat(
         rv_location = rv.headers["location"]
         if rv_location.startswith("wxa://"):
             params = parse.parse_qs(rv_location.split("?", 1)[1])
-            return auth.handle_response(200, dict(code=params.get("code")), {})
+            return dict(code=params.get("code"))
     return rv
 
 
