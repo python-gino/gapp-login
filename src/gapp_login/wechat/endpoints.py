@@ -82,8 +82,7 @@ async def login_wechat(
             tx.raise_rollback()
         rv_location = rv.headers["location"]
         if rv_location.startswith("wxa://"):
-            params = parse.parse_qs(rv_location.split("?", 1)[1])
-            return dict(code=params.get("code"))
+            return dict(parse.parse_qs(rv_location.split("?", 1)[1]))
     return rv
 
 
