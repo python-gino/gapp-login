@@ -80,6 +80,9 @@ async def login_wechat(
         rv = await auth.create_authorization_response(request, user, ctx)
         if rv.status_code >= 400:
             tx.raise_rollback()
+        rv_location = rv.headers["location"]
+        if rv_location.startswith("wxa://"):
+            return dict(parse.parse_qs(rv_location.split("?", 1)[1]))
     return rv
 
 
