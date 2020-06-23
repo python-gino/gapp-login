@@ -49,21 +49,22 @@ async def submit_sms(
             .where(LoginSMS.code == code)
             .where(LoginSMS.created_at + config.SMS_TTL > now)
             .where(LoginSMS.consumed_at.is_(None))
-            .gino.load((LoginSMS, SMSIdentity, User))
+            .gino.load((LoginSMS, User.load(current_identity=SMSIdentity)))
             .first()
         )
         if result is None:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Bad SMS code.")
-        sms, identity, user = result
+        sms, user = result
         await sms.update(consumed_at=now).apply()
-        if identity is None:
+        if user is None:
             user = await User.create(name=sms.prefix + sms.number)
-            await SMSIdentity.create(
+            user.current_identity = await SMSIdentity.create(
                 sub=sms.prefix + sms.number,
                 idp=IDP_NAME,
                 user_id=user.id,
                 sms_prefix=sms.prefix,
                 sms_number=sms.number,
+                created_at=user.created_at,
             )
         rv = await auth.create_authorization_response(request, user, ctx)
         if rv.status_code >= 400:

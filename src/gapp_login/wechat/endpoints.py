@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.put("/login/wechat")
+@router.post("/login/wechat")
 async def login_wechat(
     request: Request, code: str = Form(...), ctx=Depends(login_context)
 ):
@@ -53,13 +53,13 @@ async def login_wechat(
     openid = data["openid"]
     unionid = data.get("unionid")
     async with db.transaction() as tx:
-        result = await (
+        user = await (
             WeChatIdentity.outerjoin(User)
             .select()
             .with_for_update(of=WeChatIdentity)
             .where(WeChatIdentity.sub == openid)
             .where(WeChatIdentity.idp == idp)
-            .gino.load((WeChatIdentity, User))
+            .gino.load((User.load(current_identity=WeChatIdentity)))
             .first()
         )
         identity_data = dict(
@@ -69,8 +69,7 @@ async def login_wechat(
         )
         if user_info:
             identity_data["wechat_user_info"] = user_info
-        if result is None:
-            user = None
+        if user is None:
             if unionid:
                 user = await (
                     User.query.select_from(WeChatIdentity.outerjoin(User))
@@ -80,15 +79,15 @@ async def login_wechat(
                 )
             if not user:
                 user = await User.create(name=user_info.get("nickname") or openid)
-            await WeChatIdentity.create(
+            user.current_identity = await WeChatIdentity.create(
                 sub=openid,
                 idp=idp,
                 user_id=user.id,
-                wechat_app_id=appid,
+                created_at=user.created_at,
                 **identity_data,
             )
         else:
-            identity, user = result
+            identity = user.current_identity
             await identity.update(**identity_data).apply()
 
         rv = await auth.create_authorization_response(request, user, ctx)
@@ -100,29 +99,14 @@ async def login_wechat(
     return rv
 
 
-async def wechat_identity(
-    app_id: str, user: User = Security(require_user)
-) -> WeChatIdentity:
-    identity = await (
-        WeChatIdentity.query.select_from(User.outerjoin(WeChatIdentity))
-        .where(User.id == user.id)
-        .where(WeChatIdentity.wechat_app_id == app_id)
-        .where(db.func.starts_with(WeChatIdentity.idp, "WECHAT"))
-        .gino.first()
-    )
-    if not identity:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "WeChat account not found")
-    return identity
-
-
 @router.post("/users/update/wxa")
 async def update_wechat_account_info(
     encrypted_data: str = Form(...),
     iv: str = Form(...),
-    identity: WeChatIdentity = Depends(wechat_identity),
+    user: User = Security(require_user),
 ):
+    identity = await WeChatIdentity.get(user.get_identity_id())
     wechat_session_key = identity.profile.get("wechat_session_key")
-    wechat_app_id = identity.profile.get("wechat_app_id")
     session_key = base64.b64decode(wechat_session_key)
     encrypted_data = base64.b64decode(encrypted_data)
     iv = base64.b64decode(iv)
@@ -133,16 +117,22 @@ async def update_wechat_account_info(
     unpadder = PKCS7(algorithms.AES.block_size).unpadder()
     data = unpadder.update(data) + unpadder.finalize()
     data = json.loads(data)
+    open_id = data.pop("openId")
+    unionid = data.pop("unionId", None)
     wm = data.pop("watermark")
-    if wm["appid"] != wechat_app_id:
+    if wm["appid"] not in config.WECHAT_CLIENTS:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bad wechat AppID")
 
-    await identity.update(wechat_user_info=data).apply()
+    if open_id != identity.sub:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Wechat openId mismatched")
+
+    await identity.update(wechat_user_info=data, wechat_unionid=unionid,).apply()
     return dict(data=data)
 
 
 @router.get("/users/wechat")
-async def get_wechat_account_info(identity: WeChatIdentity = Depends(wechat_identity)):
+async def get_wechat_account_info(user: User = Security(require_user)):
+    identity = await WeChatIdentity.get(user.get_identity_id())
     return dict(data=identity.profile.get("wechat_user_info"))
 
 
@@ -152,6 +142,6 @@ def init_app(app: FastAPI):
         for app_id, client in config.WECHAT_CLIENTS.items():
             log.info("Closing wechat client connection: " + app_id)
             await client.client.aclose()
-            log.info("Closed wechat client  connection: " + app_id)
+            log.info("Closed wechat client connection: " + app_id)
 
     app.include_router(router, tags=["WeChat Login"])
