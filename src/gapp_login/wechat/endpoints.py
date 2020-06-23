@@ -59,7 +59,7 @@ async def login_wechat(
             .with_for_update(of=WeChatIdentity)
             .where(WeChatIdentity.sub == openid)
             .where(WeChatIdentity.idp == idp)
-            .gino.load((User.load(current_identity=WeChatIdentity)))
+            .gino.load(User.load(current_identity=WeChatIdentity))
             .first()
         )
         identity_data = dict(
