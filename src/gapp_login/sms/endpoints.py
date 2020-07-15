@@ -23,8 +23,12 @@ async def request_sms(prefix: str, number: str, ctx=Depends(login_context)):
 
     code = generate_token(config.SMS_CODE_LENGTH, config.SMS_CODE_CHARS)
     sms = await LoginSMS.create(prefix=prefix, number=number, code=code)
-    # TODO: send SMS here
-    log.critical("No SMS provider! Send %s to %s%s", code, prefix, number)
+    provider = config.SMS_PROVIDER
+    if provider:
+        await provider.send_login_code(
+            f"{prefix}{number}", code, config.SMS_TTL)
+    else:
+        log.critical("No SMS provider! Send %s to %s%s", code, prefix, number)
     return dict(id=sms.id, ttl=config.SMS_TTL, cool_down=config.SMS_COOL_DOWN)
 
 

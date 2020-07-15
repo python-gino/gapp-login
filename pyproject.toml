@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gapp-login"
-version = "0.1.0"
+version = "0.2.0"
 description = "GINO App extension to support multiple login providers."
 authors = ["Fantix King <fantix.king@gmail.com>"]
 license = "BSD-3-Clause"
