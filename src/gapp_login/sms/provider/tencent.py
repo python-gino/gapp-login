@@ -1,19 +1,17 @@
 import hashlib
 import hmac
 import json
+import logging
 import time
 from datetime import datetime
-from typing import Optional
 
 import httpx
 
+from . import config
+from ..errors import SMSError
 
-class SMSError(Exception):
-    def __init__(self, error: Optional[str] = None) -> None:
-        self.error = error
 
-    def __repr__(self) -> str:
-        return f"SMSError(error={self.error!r})"
+log = logging.getLogger(__name__)
 
 
 class SMSBaseProvider:
@@ -25,19 +23,23 @@ class SMSBaseProvider:
 
 
 class Tencent(SMSBaseProvider):
-    def __init__(self,
-                 secret_id: str,
-                 secret_key: str,
-                 sms_app_id: str,
-                 sms_template_id: str,
-                 sms_sign: str):
+    def __init__(self):
         super().__init__()
-        self.secret_id = secret_id
-        self.secret_key = secret_key
+
+        self.secret_id = config.TENCENT_SECRET_ID
+        self.secret_key = config.TENCENT_SECRET_KEY
+        self.sms_app_id = config.SMS_APP_ID
+        self.sms_template_id = config.SMS_TEMPLATE_ID
+        self.sms_sign = config.SMS_SIGN
+
+        if not (self.secret_id
+                and self.secret_key
+                and self.sms_app_id
+                and self.sms_template_id
+                and self.sms_sign):
+            log.critical("Tencent SMS has not been configured correctly!")
+
         self.service = "sms"
-        self.sms_app_id = sms_app_id
-        self.sms_template_id = sms_template_id
-        self.sms_sign = sms_sign
         self.host = "sms.tencentcloudapi.com"
         self.endpoint = f"https://{self.host}"
 
@@ -119,9 +121,15 @@ class Tencent(SMSBaseProvider):
 
         resp = resp.json()
 
-        status = resp.get("Response", {}).get("SendStatusSet", [])
-        status = status[0] if status else None
+        resp = resp.get("Response", {})
+        status = resp.get("SendStatusSet", [])
+        error = resp.get("Error")
+        status = status[0] if status else error
         if not status or status.get("Code") != "Ok":
-            raise SMSError(error=f"SMS Error: {status.get('Message')}")
+            # Error code: https://cloud.tencent.com/document/product/382/38778
+            logging.critical(status)
+            raise SMSError(
+                status.get("Code"),
+                error=f"SMS Error: {status.get('Message')}")
 
         return status

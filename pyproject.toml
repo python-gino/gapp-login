@@ -22,6 +22,9 @@ cryptography = "^2.9.2"
 "login.sms" = "gapp_login.sms:migrations"
 "login.wechat" = "gapp_login.wechat:migrations"
 
+[tool.poetry.plugins."sms.provider"]
+"tencent" = "gapp_login.sms.provider:Tencent"
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"

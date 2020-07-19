@@ -9,6 +9,7 @@ from starlette import status
 from starlette.requests import Request
 
 from . import config
+from .errors import SMSError
 from .models import db, LoginSMS, SMSIdentity
 
 IDP_NAME = "SMS"
@@ -25,8 +26,12 @@ async def request_sms(prefix: str, number: str, ctx=Depends(login_context)):
     sms = await LoginSMS.create(prefix=prefix, number=number, code=code)
     provider = config.SMS_PROVIDER
     if provider:
-        await provider.send_login_code(
-            f"{prefix}{number}", code, config.SMS_TTL)
+        try:
+            await provider.send_login_code(
+                f"{prefix}{number}", code, config.SMS_TTL)
+        except SMSError as error:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_ENTITY, error.code)
     else:
         log.critical("No SMS provider! Send %s to %s%s", code, prefix, number)
     return dict(id=sms.id, ttl=config.SMS_TTL, cool_down=config.SMS_COOL_DOWN)
