@@ -49,13 +49,16 @@ async def request_sms(prefix: str, number: str, ctx=Depends(login_context)):
         code = generate_token(config.SMS_CODE_LENGTH, config.SMS_CODE_CHARS)
     sms = await LoginSMS.create(prefix=prefix, number=number, code=code)
 
-    if provider:
+    if not is_demo_account and provider:
         try:
             await provider.send_login_code(f"{prefix}{number}", code, config.SMS_TTL)
         except SMSError as error:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, error.code)
     else:
-        log.critical("No SMS provider! Send %s to %s%s", code, prefix, number)
+        log.critical(
+            "Provider %s, is demo account %s! Send %s to %s%s",
+            provider, is_demo_account, code, prefix, number
+        )
     return dict(id=sms.id, ttl=config.SMS_TTL, cool_down=config.SMS_COOL_DOWN)
 
 
