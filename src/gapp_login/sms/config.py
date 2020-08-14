@@ -18,3 +18,7 @@ SMS_PROVIDER = config("SMS_PROVIDER", default=None)
 SMS_APP_ID = config("SMS_APP_ID", default=None)
 SMS_TEMPLATE_ID = config("SMS_TEMPLATE_ID", default=None)
 SMS_SIGN = config("SMS_SIGN", default=None)
+SMS_DEMO_CODE = config("SMS_DEMO_CODE", default="888888")
+SMS_DEMO_ACCOUNTS = config(
+    "SMS_DEMO_ACCOUNTS", cast=CommaSeparatedStrings, default=[]
+)

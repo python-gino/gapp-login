@@ -42,8 +42,13 @@ async def request_sms(prefix: str, number: str, ctx=Depends(login_context)):
     if prefix not in config.SMS_SUPPORTED_PREFIX:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"{prefix} not supported.")
 
-    code = generate_token(config.SMS_CODE_LENGTH, config.SMS_CODE_CHARS)
+    is_demo_account = number in config.SMS_DEMO_ACCOUNTS
+    if is_demo_account:
+        code = config.SMS_DEMO_CODE
+    else:
+        code = generate_token(config.SMS_CODE_LENGTH, config.SMS_CODE_CHARS)
     sms = await LoginSMS.create(prefix=prefix, number=number, code=code)
+
     if provider:
         try:
             await provider.send_login_code(f"{prefix}{number}", code, config.SMS_TTL)
