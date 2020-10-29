@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 
 import httpx
@@ -75,7 +76,8 @@ class OAuth2WeChatClient(WeChatBaseClient):
             USER_INFO_EP,
             params=dict(access_token=access_token, openid=openid, lang="zh_CN"),
         )
-        data = response.json()
+        content = response.content.decode("utf-8")
+        data = json.loads(content)
         if not USER_RESP_FIELDS <= set(data.keys()):
             raise WeChatAuthError(data)
         return data
