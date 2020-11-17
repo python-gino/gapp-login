@@ -131,7 +131,7 @@ async def update_wechat_account_info(
     if open_id != identity.sub:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Wechat openId mismatched")
 
-    user_info = identity.profile.get("wechat_user_info")
+    user_info = identity.profile.get("wechat_user_info") or {}
     user_info.update(data)
     await identity.update(wechat_user_info=data, wechat_unionid=unionid,).apply()
     return dict(data=data)
@@ -145,7 +145,7 @@ async def update_wechat_phone_number(
 ):
     identity = await WeChatIdentity.get(user.get_identity_id())
     data = _decrypt_wechat_data(encrypted_data, iv, identity)
-    user_info = identity.profile.get("wechat_user_info")
+    user_info = identity.profile.get("wechat_user_info") or {}
     user_info.update(data)
     await identity.update(wechat_user_info=user_info).apply()
     return dict(data=data)
