@@ -99,13 +99,7 @@ async def login_wechat(
     return rv
 
 
-@router.post("/users/update/wxa")
-async def update_wechat_account_info(
-    encrypted_data: str = Form(...),
-    iv: str = Form(...),
-    user: User = Security(require_user),
-):
-    identity = await WeChatIdentity.get(user.get_identity_id())
+def _decrypt_wechat_data(encrypted_data, iv, identity):
     wechat_session_key = identity.profile.get("wechat_session_key")
     session_key = base64.b64decode(wechat_session_key)
     encrypted_data = base64.b64decode(encrypted_data)
@@ -117,16 +111,43 @@ async def update_wechat_account_info(
     unpadder = PKCS7(algorithms.AES.block_size).unpadder()
     data = unpadder.update(data) + unpadder.finalize()
     data = json.loads(data)
-    open_id = data.pop("openId")
-    unionid = data.pop("unionId", None)
     wm = data.pop("watermark")
     if wm["appid"] not in config.WECHAT_CLIENTS:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bad wechat AppID")
+    return data
+
+
+@router.post("/users/update/wxa")
+async def update_wechat_account_info(
+    encrypted_data: str = Form(...),
+    iv: str = Form(...),
+    user: User = Security(require_user),
+):
+    identity = await WeChatIdentity.get(user.get_identity_id())
+    data = _decrypt_wechat_data(encrypted_data, iv, identity)
+    open_id = data.pop("openId")
+    unionid = data.pop("unionId", None)
 
     if open_id != identity.sub:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Wechat openId mismatched")
 
+    user_info = identity.profile.get("wechat_user_info")
+    user_info.update(data)
     await identity.update(wechat_user_info=data, wechat_unionid=unionid,).apply()
+    return dict(data=data)
+
+
+@router.post("/users/update/phone_number")
+async def update_wechat_phone_number(
+    encrypted_data: str = Form(...),
+    iv: str = Form(...),
+    user: User = Security(require_user),
+):
+    identity = await WeChatIdentity.get(user.get_identity_id())
+    data = _decrypt_wechat_data(encrypted_data, iv, identity)
+    user_info = identity.profile.get("wechat_user_info")
+    user_info.update(data)
+    await identity.update(wechat_user_info=user_info).apply()
     return dict(data=data)
 
 

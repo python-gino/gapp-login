@@ -57,7 +57,11 @@ async def request_sms(prefix: str, number: str, ctx=Depends(login_context)):
     else:
         log.critical(
             "Provider %s, is demo account %s! Send %s to %s%s",
-            provider, is_demo_account, code, prefix, number
+            provider,
+            is_demo_account,
+            code,
+            prefix,
+            number,
         )
     return dict(id=sms.id, ttl=config.SMS_TTL, cool_down=config.SMS_COOL_DOWN)
 
